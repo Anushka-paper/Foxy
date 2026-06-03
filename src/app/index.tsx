@@ -1,4 +1,5 @@
 import { Text, View, Pressable } from "react-native";
+import { Link } from "expo-router";
 
 export default function Index() {
   return (
@@ -10,6 +11,12 @@ export default function Index() {
           Learn a new language in a fun and interactive way!
         </Text>
         
+        <Link href="/onboarding" asChild>
+          <Pressable className="bg-primary-default py-4 px-8 rounded-full w-full active:opacity-80 mb-4">
+            <Text className="text-white text-center font-bold text-lg">View Onboarding</Text>
+          </Pressable>
+        </Link>
+
         <Pressable className="bg-success-default py-4 px-8 rounded-full w-full active:opacity-80">
           <Text className="text-white text-center font-bold text-lg">Get Started</Text>
         </Pressable>
