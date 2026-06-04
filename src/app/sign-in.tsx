@@ -2,19 +2,29 @@ import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { Link, Stack, router } from "expo-router";
 import { useRef, useState } from "react";
 import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { VerificationModal } from "../components/VerificationModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SignIn() {
   const [showVerification, setShowVerification] = useState(false);
   const [code, setCode] = useState("");
+  const [email, setEmail] = useState("");
   const inputRef = useRef<TextInput>(null);
+
+  const handleVerifyCode = (verifyCode: string) => {
+    // Note: Clerk is not yet installed. Skip actual Clerk API call for now.
+    // When installed, implement: signIn.create -> signIn.attemptFirstFactor
+    if (verifyCode.length === 6) {
+      setShowVerification(false);
+      router.replace("/");
+    }
+  };
 
   const handleCodeChange = (text: string) => {
     const newCode = text.replace(/[^0-9]/g, '').slice(0, 6);
     setCode(newCode);
     if (newCode.length === 6) {
-      setShowVerification(false);
-      router.replace("/");
+      handleVerifyCode(newCode);
     }
   };
 
@@ -50,6 +60,8 @@ export default function SignIn() {
           <View className="border border-[#E5E7EB] rounded-2xl px-4 py-3 mb-6 bg-white">
             <Text className="text-[13px] text-[#6B7280] mb-0.5">Email</Text>
             <TextInput 
+              value={email}
+              onChangeText={setEmail}
               placeholder="alex@gmail.com"
               placeholderTextColor="#9CA3AF"
               className="text-[16px] text-[#111827] font-sans p-0 m-0 leading-tight"
@@ -59,7 +71,10 @@ export default function SignIn() {
           </View>
 
           <Pressable 
-            onPress={() => setShowVerification(true)}
+            onPress={() => {
+              setCode("");
+              setShowVerification(true);
+            }}
             className="bg-[#7354FA] py-4 rounded-[16px] items-center active:opacity-80 shadow-sm"
           >
             <Text className="text-white text-[17px] font-semibold">Sign In</Text>
@@ -102,54 +117,13 @@ export default function SignIn() {
         </View>
       </ScrollView>
 
-      {/* Verification Modal */}
-      <Modal visible={showVerification} transparent animationType="fade">
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1 justify-end bg-black/40"
-        >
-          <Pressable className="flex-1" onPress={() => setShowVerification(false)} />
-          <View className="bg-white rounded-t-3xl p-8 pb-12">
-            <View className="w-12 h-1.5 bg-gray-300 rounded-full self-center mb-6" />
-            <Text className="text-2xl font-black text-center text-[#111827] mb-2">Check your email</Text>
-            <Text className="text-center text-[#6B7280] mb-8 font-sans">
-              We've sent a 6-digit verification code to your email.
-            </Text>
-            
-            {/* Code Input Container */}
-            <View className="relative mb-4">
-              {/* Hidden Input over the boxes */}
-              <TextInput
-                ref={inputRef}
-                value={code}
-                onChangeText={handleCodeChange}
-                keyboardType="number-pad"
-                maxLength={6}
-                caretHidden
-                autoFocus
-                style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, zIndex: 10 }}
-              />
-
-              {/* Custom Code Input UI */}
-              <View className="flex-row justify-between gap-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <View 
-                    key={index} 
-                    className={`flex-1 h-14 rounded-xl border-2 items-center justify-center ${
-                      code.length === index ? 'border-[#7354FA] bg-[#F5F3FF]' : 'border-gray-200 bg-gray-50'
-                    }`}
-                  >
-                    <Text className="text-2xl font-bold text-[#111827]">
-                      {code[index] || ""}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <VerificationModal 
+        visible={showVerification} 
+        onClose={() => setShowVerification(false)} 
+        code={code} 
+        onChangeCode={handleCodeChange} 
+        inputRef={inputRef} 
+      />
     </SafeAreaView>
   );
 }

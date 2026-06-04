@@ -3,12 +3,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, Stack, router } from "expo-router";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { useState, useRef } from "react";
+import { VerificationModal } from "../components/VerificationModal";
 
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [code, setCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const inputRef = useRef<TextInput>(null);
+
+  const isValid = email.includes("@") && password.length >= 8;
 
   const handleCodeChange = (text: string) => {
     const newCode = text.replace(/[^0-9]/g, '').slice(0, 6);
@@ -51,6 +56,8 @@ export default function SignUp() {
           <View className="border border-[#E5E7EB] rounded-2xl px-4 py-3 mb-4 bg-white">
             <Text className="text-[13px] text-[#6B7280] mb-0.5">Email</Text>
             <TextInput 
+              value={email}
+              onChangeText={setEmail}
               placeholder="alex@gmail.com"
               placeholderTextColor="#9CA3AF"
               className="text-[16px] text-[#111827] font-sans p-0 m-0 leading-tight"
@@ -63,6 +70,8 @@ export default function SignUp() {
             <View className="flex-1">
               <Text className="text-[13px] text-[#6B7280] mb-0.5">Password</Text>
               <TextInput 
+                value={password}
+                onChangeText={setPassword}
                 placeholder="••••••••"
                 placeholderTextColor="#9CA3AF"
                 className="text-[16px] text-[#111827] font-sans p-0 m-0 leading-tight"
@@ -75,8 +84,12 @@ export default function SignUp() {
           </View>
 
           <Pressable 
-            onPress={() => setShowVerification(true)}
-            className="bg-[#7354FA] py-4 rounded-[16px] items-center active:opacity-80 shadow-sm"
+            onPress={() => {
+              setCode("");
+              setShowVerification(true);
+            }}
+            disabled={!isValid}
+            className={`py-4 rounded-[16px] items-center active:opacity-80 shadow-sm ${isValid ? 'bg-[#7354FA]' : 'bg-[#D1D5DB]'}`}
           >
             <Text className="text-white text-[17px] font-semibold">Sign Up</Text>
           </Pressable>
@@ -118,54 +131,13 @@ export default function SignUp() {
         </View>
       </ScrollView>
 
-      {/* Verification Modal */}
-      <Modal visible={showVerification} transparent animationType="fade">
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1 justify-end bg-black/40"
-        >
-          <Pressable className="flex-1" onPress={() => setShowVerification(false)} />
-          <View className="bg-white rounded-t-3xl p-8 pb-12">
-            <View className="w-12 h-1.5 bg-gray-300 rounded-full self-center mb-6" />
-            <Text className="text-2xl font-black text-center text-[#111827] mb-2">Check your email</Text>
-            <Text className="text-center text-[#6B7280] mb-8 font-sans">
-              We've sent a 6-digit verification code to your email.
-            </Text>
-            
-            {/* Code Input Container */}
-            <View className="relative mb-4">
-              {/* Hidden Input over the boxes */}
-              <TextInput
-                ref={inputRef}
-                value={code}
-                onChangeText={handleCodeChange}
-                keyboardType="number-pad"
-                maxLength={6}
-                caretHidden
-                autoFocus
-                style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, zIndex: 10 }}
-              />
-
-              {/* Custom Code Input UI */}
-              <View className="flex-row justify-between gap-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <View 
-                    key={index} 
-                    className={`flex-1 h-14 rounded-xl border-2 items-center justify-center ${
-                      code.length === index ? 'border-[#7354FA] bg-[#F5F3FF]' : 'border-gray-200 bg-gray-50'
-                    }`}
-                  >
-                    <Text className="text-2xl font-bold text-[#111827]">
-                      {code[index] || ""}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <VerificationModal 
+        visible={showVerification} 
+        onClose={() => setShowVerification(false)} 
+        code={code} 
+        onChangeCode={handleCodeChange} 
+        inputRef={inputRef} 
+      />
     </SafeAreaView>
   );
 }
