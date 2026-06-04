@@ -6,7 +6,7 @@ interface VerificationModalProps {
   onClose: () => void;
   code: string;
   onChangeCode: (text: string) => void;
-  inputRef: RefObject<TextInput>;
+  inputRef: RefObject<TextInput | null>;
 }
 
 export function VerificationModal({ visible, onClose, code, onChangeCode, inputRef }: VerificationModalProps) {
@@ -21,7 +21,7 @@ export function VerificationModal({ visible, onClose, code, onChangeCode, inputR
           <View className="w-12 h-1.5 bg-gray-300 rounded-full self-center mb-6" />
           <Text className="text-2xl font-black text-center text-[#111827] mb-2">Check your email</Text>
           <Text className="text-center text-[#6B7280] mb-8 font-sans">
-            We've sent a 6-digit verification code to your email.
+            We&apos;ve sent a verification code to your email.
           </Text>
           
           {/* Code Input Container */}

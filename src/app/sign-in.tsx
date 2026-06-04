@@ -1,22 +1,85 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { Link, Stack, router } from "expo-router";
 import { useRef, useState } from "react";
-import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, ActivityIndicator } from "react-native";
 import { VerificationModal } from "../components/VerificationModal";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSignIn, useOAuth } from "@clerk/clerk-expo";
+import { useWarmUpBrowser } from "../hooks/useWarmUpBrowser";
 
 export default function SignIn() {
+  const { signIn, setActive, isLoaded } = useSignIn();
   const [showVerification, setShowVerification] = useState(false);
   const [code, setCode] = useState("");
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
-  const handleVerifyCode = (verifyCode: string) => {
-    // Note: Clerk is not yet installed. Skip actual Clerk API call for now.
-    // When installed, implement: signIn.create -> signIn.attemptFirstFactor
-    if (verifyCode.length === 6) {
-      setShowVerification(false);
-      router.replace("/");
+  useWarmUpBrowser();
+  const { startOAuthFlow: googleAuth } = useOAuth({ strategy: "oauth_google" });
+  const { startOAuthFlow: facebookAuth } = useOAuth({ strategy: "oauth_facebook" });
+  const { startOAuthFlow: appleAuth } = useOAuth({ strategy: "oauth_apple" });
+
+  const handleOAuth = async (startOAuthFlow: any) => {
+    try {
+      const { createdSessionId, setActive } = await startOAuthFlow();
+      if (createdSessionId) {
+        await setActive!({ session: createdSessionId });
+        router.replace("/");
+      }
+    } catch (err) {
+      console.error("OAuth error", err);
+    }
+  };
+
+  const handleSignIn = async () => {
+    if (!isLoaded) return;
+    setIsLoading(true);
+    try {
+      const { supportedFirstFactors } = await signIn.create({
+        identifier: email,
+      });
+
+      const isEmailCodeFactor = supportedFirstFactors?.find(
+        (factor) => factor.strategy === 'email_code'
+      );
+
+      if (isEmailCodeFactor) {
+        const { emailAddressId } = isEmailCodeFactor as { emailAddressId: string };
+        await signIn.prepareFirstFactor({
+          strategy: 'email_code',
+          emailAddressId,
+        });
+        setShowVerification(true);
+      } else {
+        alert("Email code authentication is not enabled for this user.");
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+      alert(err.errors?.[0]?.message || "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (verifyCode: string) => {
+    if (!isLoaded) return;
+    try {
+      const completeSignIn = await signIn.attemptFirstFactor({
+        strategy: "email_code",
+        code: verifyCode
+      });
+      
+      if (completeSignIn.status === "complete") {
+        await setActive({ session: completeSignIn.createdSessionId });
+        setShowVerification(false);
+        router.replace("/");
+      } else {
+        alert("Invalid code");
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+      alert(err.errors?.[0]?.message || "Invalid code");
     }
   };
 
@@ -73,11 +136,16 @@ export default function SignIn() {
           <Pressable 
             onPress={() => {
               setCode("");
-              setShowVerification(true);
+              handleSignIn();
             }}
             className="bg-[#7354FA] py-4 rounded-[16px] items-center active:opacity-80 shadow-sm"
+            disabled={isLoading}
           >
-            <Text className="text-white text-[17px] font-semibold">Sign In</Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-[17px] font-semibold">Sign In</Text>
+            )}
           </Pressable>
         </View>
 
@@ -90,17 +158,26 @@ export default function SignIn() {
 
         {/* Social Auth */}
         <View className="px-6 gap-3">
-          <Pressable className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70">
+          <Pressable 
+            onPress={() => handleOAuth(googleAuth)}
+            className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70"
+          >
             <Image source={{ uri: "https://img.icons8.com/color/48/000000/google-logo.png" }} className="w-5 h-5 absolute left-6" />
             <Text className="text-[#111827] text-[15px] font-medium">Continue with Google</Text>
           </Pressable>
 
-          <Pressable className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70">
+          <Pressable 
+            onPress={() => handleOAuth(facebookAuth)}
+            className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70"
+          >
             <FontAwesome5 name="facebook" size={22} color="#1877F2" className="absolute left-6" solid />
             <Text className="text-[#111827] text-[15px] font-medium">Continue with Facebook</Text>
           </Pressable>
 
-          <Pressable className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70">
+          <Pressable 
+            onPress={() => handleOAuth(appleAuth)}
+            className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70"
+          >
             <FontAwesome5 name="apple" size={24} color="#000000" className="absolute left-6" />
             <Text className="text-[#111827] text-[15px] font-medium">Continue with Apple</Text>
           </Pressable>
@@ -108,7 +185,7 @@ export default function SignIn() {
 
         {/* Footer */}
         <View className="mt-8 flex-row justify-center items-center">
-          <Text className="text-[#6B7280] text-[15px] font-sans">Don't have an account? </Text>
+          <Text className="text-[#6B7280] text-[15px] font-sans">Don&apos;t have an account? </Text>
           <Link href="/sign-up" asChild>
             <Pressable>
               <Text className="text-[#7354FA] text-[15px] font-semibold">Sign up</Text>
