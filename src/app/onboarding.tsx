@@ -1,4 +1,5 @@
-import { View, Text, Image, Pressable, SafeAreaView } from "react-native";
+import { View, Text, Image, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -8,7 +9,7 @@ export default function Onboarding() {
       <Stack.Screen options={{ headerShown: false }} />
       
       {/* Top Logo Section */}
-      <View className="flex-row items-center justify-center mt-20 mb-12">
+      <View className="flex-row items-center justify-center mt-10 mb-5">
         <Image 
           source={require("../../assets/images/moscot-logo.png")} 
           className="w-14 h-14 mr-3" 
@@ -28,27 +29,27 @@ export default function Onboarding() {
           Real conversations, personalized lessons, anytime, anywhere.
         </Text>
 
-        <View className="flex-1 justify-center items-center ">
-          <View className="w-[320px] h-[320px] relative justify-center items-center">
+        <View className="flex-1 justify-center items-center w-full min-h-[300px]">
+          <View className="w-[85%] max-w-[320px] aspect-square relative justify-center items-center mt-4">
             
             {/* Mascot Image - absolutely positioned to easily overlap bubbles */}
             <Image 
               source={require("../../assets/images/mascot-welcome.png")} 
-              className="absolute w-[380px] h-[380px] z-0"
+              className="absolute w-[115%] h-[115%] z-0"
               resizeMode="contain"
             />
 
             {/* Speech Bubbles */}
-            <View className="absolute top-6 -left-4 bg-[#F0F6FF] px-5 py-2.5 rounded-3xl rounded-bl-sm rotate-[-6deg] z-10 shadow-sm border border-[#E5EFFF]">
-              <Text className="text-lg font-bold text-[#1F2937]">Hello!</Text>
+            <View className="absolute top-[10%] -left-[10%] bg-[#F0F6FF] px-4 py-2 sm:px-5 sm:py-2.5 rounded-3xl rounded-bl-sm rotate-[-6deg] z-10 shadow-sm border border-[#E5EFFF]">
+              <Text className="text-base sm:text-lg font-bold text-[#1F2937]">Hello!</Text>
             </View>
             
-            <View className="absolute -top-4 right-2 bg-[#F5F0FF] px-5 py-2.5 rounded-3xl rounded-br-sm rotate-[6deg] z-10 shadow-sm border border-[#EDE5FF]">
-              <Text className="text-lg font-bold text-[#6338f0]">¡Hola!</Text>
+            <View className="absolute -top-[5%] right-[5%] bg-[#F5F0FF] px-4 py-2 sm:px-5 sm:py-2.5 rounded-3xl rounded-br-sm rotate-[6deg] z-10 shadow-sm border border-[#EDE5FF]">
+              <Text className="text-base sm:text-lg font-bold text-[#6338f0]">¡Hola!</Text>
             </View>
 
-            <View className="absolute top-42 -right-8 bg-[#FFF0F0] px-5 py-2.5 rounded-3xl rounded-br-sm rotate-[-4deg] z-10 shadow-sm border border-[#FFE5E5]">
-              <Text className="text-lg font-bold text-[#FF5A5A]">你好!</Text>
+            <View className="absolute top-[50%] -right-[15%] bg-[#FFF0F0] px-4 py-2 sm:px-5 sm:py-2.5 rounded-3xl rounded-br-sm rotate-[-4deg] z-10 shadow-sm border border-[#FFE5E5]">
+              <Text className="text-base sm:text-lg font-bold text-[#FF5A5A]">你好!</Text>
             </View>
 
           </View>
@@ -64,8 +65,8 @@ export default function Onboarding() {
       </View>
 
       {/* Bottom Button */}
-      <View className="px-6 pb-15 pt-4">
-        <Link href="/" asChild>
+      <View className="px-6 pb-14 pt-4">
+        <Link href="/sign-up" asChild>
           <Pressable className="bg-[#6338f0] py-4 rounded-[20px] flex-row items-center justify-center active:opacity-80 shadow-sm relative">
             <Text className="text-white text-lg font-bold text-center">Get Started</Text>
             <View className="absolute right-6">

@@ -1,0 +1,206 @@
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { Link, Stack, router } from "expo-router";
+import { useRef, useState } from "react";
+import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, ActivityIndicator } from "react-native";
+import { VerificationModal } from "../components/VerificationModal";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useSignIn, useOAuth } from "@clerk/clerk-expo";
+import { useWarmUpBrowser } from "../hooks/useWarmUpBrowser";
+
+export default function SignIn() {
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const [showVerification, setShowVerification] = useState(false);
+  const [code, setCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+
+  useWarmUpBrowser();
+  const { startOAuthFlow: googleAuth } = useOAuth({ strategy: "oauth_google" });
+  const { startOAuthFlow: facebookAuth } = useOAuth({ strategy: "oauth_facebook" });
+  const { startOAuthFlow: appleAuth } = useOAuth({ strategy: "oauth_apple" });
+
+  const handleOAuth = async (startOAuthFlow: any) => {
+    try {
+      const { createdSessionId, setActive } = await startOAuthFlow();
+      if (createdSessionId) {
+        await setActive!({ session: createdSessionId });
+        router.replace("/");
+      }
+    } catch (err) {
+      console.error("OAuth error", err);
+    }
+  };
+
+  const handleSignIn = async () => {
+    if (!isLoaded) return;
+    setIsLoading(true);
+    try {
+      const { supportedFirstFactors } = await signIn.create({
+        identifier: email,
+      });
+
+      const isEmailCodeFactor = supportedFirstFactors?.find(
+        (factor) => factor.strategy === 'email_code'
+      );
+
+      if (isEmailCodeFactor) {
+        const { emailAddressId } = isEmailCodeFactor as { emailAddressId: string };
+        await signIn.prepareFirstFactor({
+          strategy: 'email_code',
+          emailAddressId,
+        });
+        setShowVerification(true);
+      } else {
+        alert("Email code authentication is not enabled for this user.");
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+      alert(err.errors?.[0]?.message || "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (verifyCode: string) => {
+    if (!isLoaded) return;
+    try {
+      const completeSignIn = await signIn.attemptFirstFactor({
+        strategy: "email_code",
+        code: verifyCode
+      });
+      
+      if (completeSignIn.status === "complete") {
+        await setActive({ session: completeSignIn.createdSessionId });
+        setShowVerification(false);
+        router.replace("/");
+      } else {
+        alert("Invalid code");
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+      alert(err.errors?.[0]?.message || "Invalid code");
+    }
+  };
+
+  const handleCodeChange = (text: string) => {
+    const newCode = text.replace(/[^0-9]/g, '').slice(0, 6);
+    setCode(newCode);
+    if (newCode.length === 6) {
+      handleVerifyCode(newCode);
+    }
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        {/* Header */}
+        <View className="px-6 pt-2 pb-2">
+          <Pressable onPress={() => router.back()} className="w-10 h-10 justify-center">
+            <Ionicons name="chevron-back" size={28} color="#111827" />
+          </Pressable>
+        </View>
+
+        {/* Title */}
+        <View className="px-6 mt-2">
+          <Text className="text-[28px] font-bold text-[#111827] mb-1 tracking-tight">Welcome back</Text>
+          <Text className="text-[15px] text-[#6B7280] font-sans">Log in to continue your learning ✨</Text>
+        </View>
+
+        {/* Mascot */}
+        <View className="items-center mt-6 justify-end z-10">
+          <Image 
+            source={require("../../assets/images/mascot-auth.png")} 
+            className="w-[220px] h-[220px]"
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Form */}
+        <View className="px-6 -mt-12 z-20">
+          <View className="border border-[#E5E7EB] rounded-2xl px-4 py-3 mb-6 bg-white">
+            <Text className="text-[13px] text-[#6B7280] mb-0.5">Email</Text>
+            <TextInput 
+              value={email}
+              onChangeText={setEmail}
+              placeholder="alex@gmail.com"
+              placeholderTextColor="#9CA3AF"
+              className="text-[16px] text-[#111827] font-sans p-0 m-0 leading-tight"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <Pressable 
+            onPress={() => {
+              setCode("");
+              handleSignIn();
+            }}
+            className="bg-[#7354FA] py-4 rounded-[16px] items-center active:opacity-80 shadow-sm"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-[17px] font-semibold">Sign In</Text>
+            )}
+          </Pressable>
+        </View>
+
+        {/* Divider */}
+        <View className="px-6 mt-8 mb-8 flex-row items-center justify-center">
+          <View className="w-12 h-[1px] bg-[#E5E7EB]" />
+          <Text className="px-3 text-[14px] text-[#6B7280] font-sans">or continue with</Text>
+          <View className="w-12 h-[1px] bg-[#E5E7EB]" />
+        </View>
+
+        {/* Social Auth */}
+        <View className="px-6 gap-3">
+          <Pressable 
+            onPress={() => handleOAuth(googleAuth)}
+            className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70"
+          >
+            <Image source={{ uri: "https://img.icons8.com/color/48/000000/google-logo.png" }} className="w-5 h-5 absolute left-6" />
+            <Text className="text-[#111827] text-[15px] font-medium">Continue with Google</Text>
+          </Pressable>
+
+          <Pressable 
+            onPress={() => handleOAuth(facebookAuth)}
+            className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70"
+          >
+            <FontAwesome5 name="facebook" size={22} color="#1877F2" className="absolute left-6" solid />
+            <Text className="text-[#111827] text-[15px] font-medium">Continue with Facebook</Text>
+          </Pressable>
+
+          <Pressable 
+            onPress={() => handleOAuth(appleAuth)}
+            className="flex-row items-center justify-center py-3.5 rounded-[16px] border border-[#E5E7EB] bg-white active:opacity-70"
+          >
+            <FontAwesome5 name="apple" size={24} color="#000000" className="absolute left-6" />
+            <Text className="text-[#111827] text-[15px] font-medium">Continue with Apple</Text>
+          </Pressable>
+        </View>
+
+        {/* Footer */}
+        <View className="mt-8 flex-row justify-center items-center">
+          <Text className="text-[#6B7280] text-[15px] font-sans">Don&apos;t have an account? </Text>
+          <Link href="/sign-up" asChild>
+            <Pressable>
+              <Text className="text-[#7354FA] text-[15px] font-semibold">Sign up</Text>
+            </Pressable>
+          </Link>
+        </View>
+      </ScrollView>
+
+      <VerificationModal 
+        visible={showVerification} 
+        onClose={() => setShowVerification(false)} 
+        code={code} 
+        onChangeCode={handleCodeChange} 
+        inputRef={inputRef} 
+      />
+    </SafeAreaView>
+  );
+}
