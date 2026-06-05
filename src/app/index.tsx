@@ -1,7 +1,7 @@
 import { Text, View, Pressable, ActivityIndicator } from "react-native";
 import { Redirect } from "expo-router";
 import { useAuth, useClerk, useUser } from "@clerk/clerk-expo";
-
+import { Link } from "expo-router";
 export default function Index() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
@@ -27,6 +27,11 @@ export default function Index() {
         <Text className="text-base font-sans text-text-secondary text-center mb-8">
           Welcome back, {user?.primaryEmailAddress?.emailAddress}!
         </Text>
+        <Link href="/language-selection" asChild>
+          <Pressable className="bg-primary-default py-4 px-8 rounded-full w-full active:opacity-80 mt-4">
+            <Text className="text-white text-center font-bold text-lg">Choose Language</Text>
+          </Pressable>
+        </Link>
         
         <Pressable 
           className="bg-red-500 py-4 px-8 rounded-full w-full active:opacity-80 mt-4"
