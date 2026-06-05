@@ -1,6 +1,7 @@
 import { Language } from '../types/learning';
+import { UNITS } from './units';
 
-export const LANGUAGES: Language[] = [
+const ALL_LANGUAGES: Language[] = [
   {
     id: 'es',
     name: 'Spanish',
@@ -32,3 +33,7 @@ export const LANGUAGES: Language[] = [
     emoji: '🇨🇳',
   },
 ];
+
+const availableLanguageIds = new Set(UNITS.map(unit => unit.languageId));
+
+export const LANGUAGES: Language[] = ALL_LANGUAGES.filter(lang => availableLanguageIds.has(lang.id));

@@ -3,13 +3,23 @@ import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LANGUAGES } from "../data/languages";
+import { useLanguageStore } from "../store/languageStore";
 
 export default function LanguageSelectionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("es");
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
+  const currentLang = useLanguageStore((state) => state.language);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(currentLang || "es");
+
+  const handleContinue = async () => {
+    setLanguage(selectedLanguage);
+    await AsyncStorage.setItem("language", selectedLanguage);
+    router.push("/");
+  };
 
   const filteredLanguages = LANGUAGES.filter((lang) =>
     lang.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -89,7 +99,7 @@ export default function LanguageSelectionScreen() {
             );
           })}
         <Pressable 
-          onPress={() => router.back()}
+          onPress={handleContinue}
           className="bg-primary-default py-4 mt-2 rounded-3xl w-full items-center shadow-sm"
         >
           <Text className="text-white font-bold text-lg">Continue</Text>
